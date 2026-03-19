@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TikTok Stats Parser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --border2: #2e2e2e;
+    --accent: #fe2c55;
+    --accent2: #25f4ee;
+    --text: #f0f0f0;
+    --muted: #666;
+    --success: #1db954;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    margin-bottom: 52px;
+  }
+
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 4px;
+    margin-left: 52px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 7px;
+    font-weight: 500;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent2);
+  }
+
+  input[type="password"] {
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    font-size: 13px;
+  }
+
+  .input-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+
+  /* ── API KEY ROW ── */
+  .api-row {
+    position: relative;
+  }
+
+  .api-row input {
+    padding-right: 44px;
+  }
+
+  .toggle-vis {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 16px;
+    padding: 4px;
+    line-height: 1;
+  }
+
+  .toggle-vis:hover { color: var(--text); }
+
+  /* ── MONTH SELECT ── */
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  select option { background: #1a1a1a; }
+
+  /* ── BUTTON ── */
+  .btn-run {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-run:hover:not(:disabled) { opacity: 0.88; }
+  .btn-run:active:not(:disabled) { transform: scale(0.99); }
+  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── PROGRESS ── */
+  #progress {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--surface2);
+    border-radius: 100px;
+    height: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .progress-log {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  /* ── RESULTS ── */
+  #results { display: none; margin-top: 28px; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .results-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .btn-csv {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-csv:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  /* ── RESULT CARD ── */
+  .result-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.3s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+    border-radius: 3px 0 0 3px;
+  }
+
+  .result-item.error::before { background: #ff4444; }
+
+  .result-username {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .result-username span {
+    color: var(--accent);
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-box {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent2); }
+
+  .top-video {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .top-badge {
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .top-video-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .top-video-views {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .top-video-link {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+    transition: color 0.2s;
+  }
+
+  .top-video-link:hover { color: var(--accent2); }
+
+  .result-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    margin-top: 52px;
+    font-size: 12px;
+    color: #333;
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 520px) {
+    .row-2 { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">▶</div>
+      <h1>TikTok Stats Parser</h1>
+    </div>
+    <p class="subtitle">Аналіз акаунтів через Apify API · дані за вибраний місяць</p>
+  </header>
+
+  <!-- API KEY -->
+  <div class="card">
+    <div class="card-label">Налаштування</div>
+    <div class="field">
+      <label>Apify API ключ</label>
+      <div class="api-row">
+        <input type="password" id="apiKey" placeholder="apify_api_XXXXXXXXXXXXXXXX" autocomplete="off"/>
+        <button class="toggle-vis" onclick="toggleKeyVis()" title="Показати/приховати">👁</button>
+      </div>
+      <div class="input-hint">Знайти: console.apify.com → Settings → API & Integrations</div>
+    </div>
+  </div>
+
+  <!-- INPUT -->
+  <div class="card">
+    <div class="card-label">Параметри запиту</div>
+
+    <div class="field">
+      <label>Акаунти TikTok</label>
+      <textarea id="accounts" rows="4"
+        placeholder="https://www.tiktok.com/@midterm.guy&#10;https://www.tiktok.com/@study.with.caroline&#10;&#10;або просто @username — по одному на рядок"></textarea>
+      <div class="input-hint">URL або @username — кожен з нового рядка</div>
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>Місяць</label>
+        <select id="month"></select>
+      </div>
+      <div class="field">
+        <label>Рік</label>
+        <select id="year"></select>
+      </div>
+    </div>
+
+    <button class="btn-run" id="runBtn" onclick="runParser()">▶ ЗАПУСТИТИ ПАРСЕР</button>
+
+    <div id="progress">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-log" id="progressLog">Ініціалізація...</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="results-header">
+      <div class="results-title">Результати</div>
+      <button class="btn-csv" onclick="downloadCSV()">↓ Завантажити CSV</button>
+    </div>
+    <div id="resultsBody"></div>
+  </div>
+
+  <footer>made with Apify · clockworks/tiktok-profile-scraper</footer>
+</div>
+
+<script>
+// ── INIT SELECTS ──
+const MONTHS = ['Січень','Лютий','Березень','Квітень','Травень','Червень',
+                'Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+
+(function initSelects() {
+  const now = new Date();
+  const mSel = document.getElementById('month');
+  const ySel = document.getElementById('year');
+
+  MONTHS.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i + 1;
+    opt.textContent = m;
+    if (i + 1 === now.getMonth() + 1) opt.selected = true;
+    mSel.appendChild(opt);
+  });
+
+  for (let y = now.getFullYear(); y >= 2020; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === now.getFullYear()) opt.selected = true;
+    ySel.appendChild(opt);
+  }
+})();
+
+// ── TOGGLE KEY VIS ──
+function toggleKeyVis() {
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── PARSE ACCOUNTS ──
+function parseAccounts(raw) {
+  return raw.split('\n')
+    .map(l => l.trim().replace(/,$/, ''))
+    .filter(Boolean)
+    .map(l => {
+      if (l.includes('tiktok.com/@')) return l.split('tiktok.com/@')[1].split('/')[0];
+      if (l.startsWith('@')) return l.slice(1);
+      return l;
+    })
+    .filter(Boolean);
+}
+
+// ── FORMAT NUMBERS ──
+function fmt(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
+// ── PROGRESS ──
+function setProgress(pct, msg) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLog').textContent = msg;
+}
+
+// ── RENDER RESULTS ──
+let lastResults = [];
+
+function renderResults(results) {
+  lastResults = results;
+  const body = document.getElementById('resultsBody');
+  body.innerHTML = '';
+
+  results.forEach((r, idx) => {
+    const div = document.createElement('div');
+    div.className = 'result-item' + (r.error ? ' error' : '');
+    div.style.animationDelay = (idx * 0.08) + 's';
+
+    if (r.error) {
+      div.innerHTML = `
+        <div class="result-username">@<span>${r.username}</span></div>
+        <div class="result-error">❌ ${r.error}</div>`;
+    } else {
+      div.innerHTML = `
+        <div class="result-username">@<span>${r.username}</span> · ${r.month}</div>
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-label">Відео</div>
+            <div class="stat-value">${r.videoCount}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Перегляди</div>
+            <div class="stat-value accent">${fmt(r.totalViews)}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Серед. / відео</div>
+            <div class="stat-value">${r.videoCount ? fmt(Math.round(r.totalViews / r.videoCount)) : '—'}</div>
+          </div>
+        </div>
+        ${r.topVideoUrl ? `
+        <div class="top-video">
+          <div class="top-badge">ТОП</div>
+          <div class="top-video-info">
+            <div class="top-video-views">${fmt(r.topVideoViews)} переглядів</div>
+            <a class="top-video-link" href="${r.topVideoUrl}" target="_blank" rel="noopener">${r.topVideoUrl}</a>
+          </div>
+        </div>` : '<div style="color:var(--muted);font-size:13px">Відео за цей місяць не знайдено</div>'}`;
+    }
+
+    body.appendChild(div);
+  });
+
+  document.getElementById('results').style.display = 'block';
+}
+
+// ── CSV DOWNLOAD ──
+function downloadCSV() {
+  if (!lastResults.length) return;
+  const header = ['username','month','video_count','total_views','avg_views','top_video_views','top_video_url','error'];
+  const rows = lastResults.map(r => [
+    r.username, r.month || '', r.videoCount || 0, r.totalViews || 0,
+    r.videoCount ? Math.round(r.totalViews / r.videoCount) : 0,
+    r.topVideoViews || 0, r.topVideoUrl || '', r.error || ''
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tiktok_stats_${document.getElementById('year').value}_${String(document.getElementById('month').value).padStart(2,'0')}.csv`;
+  a.click();
+}
+
+// ── MAIN RUN ──
+async function runParser() {
+  const apiKey   = document.getElementById('apiKey').value.trim();
+  const raw      = document.getElementById('accounts').value;
+  const month    = document.getElementById('month').value;
+  const year     = document.getElementById('year').value;
+  const accounts = parseAccounts(raw);
+
+  if (!apiKey)        return alert('Вкажи Apify API ключ');
+  if (!accounts.length) return alert('Додай хоча б один акаунт');
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ ОБРОБКА...';
+  document.getElementById('progress').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+
+  setProgress(10, `Запит для ${accounts.length} акаунт(ів)...`);
+
+  try {
+    const res = await fetch('/.netlify/functions/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey, accounts, year: Number(year), month: Number(month) }),
+    });
+
+    setProgress(90, 'Обробка відповіді...');
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    setProgress(100, `Готово! Оброблено акаунтів: ${data.results.length}`);
+    renderResults(data.results);
+
+  } catch (err) {
+    setProgress(0, '');
+    alert('Помилка: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
+  }
+}
+</script>
+</body>
+</html>
