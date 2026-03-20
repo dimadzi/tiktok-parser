@@ -43,7 +43,7 @@ exports.handler = async (event) => {
         profileVideosSortedBy: "latest",
         maxPostsPerProfile: 100,
         publishedAfterDate: dateFrom,
-      }, { timeoutSecs: 300 });
+      });
 
       const items = [];
       for await (const item of client.dataset(run.defaultDatasetId).iterate()) {
