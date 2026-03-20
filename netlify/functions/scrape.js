@@ -1,6 +1,4 @@
-const { ApifyClient } = require("apify-client");
-
-const ACTOR_ID = "clockworks/tiktok-profile-scraper";
+const ACTOR_ID = "clockworks~tiktok-profile-scraper";
 
 exports.handler = async (event) => {
   const headers = {
@@ -9,66 +7,69 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
   };
 
-  if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 200, headers, body: "" };
-  }
-
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
-  }
+  if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
 
   let body;
-  try {
-    body = JSON.parse(event.body);
-  } catch {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid JSON" }) };
-  }
+  try { body = JSON.parse(event.body); }
+  catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid JSON" }) }; }
 
   const { apiKey, accounts, year, month } = body;
-
   if (!apiKey || !accounts?.length || !year || !month) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "Відсутні обов'язкові поля" }) };
   }
 
-  const client = new ApifyClient({ token: apiKey });
+  const BASE = "https://api.apify.com/v2";
   const dateFrom = `${year}-${String(month).padStart(2, "0")}-01`;
-
   const results = [];
 
   for (const username of accounts) {
     try {
-      const run = await client.actor(ACTOR_ID).call({
-        profiles: [username],
-        profileSections: ["videos"],
-        profileVideosSortedBy: "latest",
-        maxPostsPerProfile: 100,
-        publishedAfterDate: dateFrom,
+      // 1. Запустити актор
+      const runRes = await fetch(`${BASE}/acts/${ACTOR_ID}/runs?token=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profiles: [username],
+          profileSections: ["videos"],
+          profileVideosSortedBy: "latest",
+          maxPostsPerProfile: 100,
+          publishedAfterDate: dateFrom,
+        }),
       });
 
-      const items = [];
-      for await (const item of client.dataset(run.defaultDatasetId).iterate()) {
-        items.push(item);
+      const runData = await runRes.json();
+      if (!runRes.ok) throw new Error(runData?.error?.message || `Run failed: ${runRes.status}`);
+
+      const runId = runData.data.id;
+      const datasetId = runData.data.defaultDatasetId;
+
+      // 2. Чекати завершення (polling кожні 5 секунд, макс 4 хвилини)
+      let status = "RUNNING";
+      for (let i = 0; i < 48; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const statusRes = await fetch(`${BASE}/actor-runs/${runId}?token=${apiKey}`);
+        const statusData = await statusRes.json();
+        status = statusData.data?.status;
+        if (status === "SUCCEEDED" || status === "FAILED" || status === "ABORTED") break;
       }
 
-      const monthVideos = items.filter((item) => {
+      if (status !== "SUCCEEDED") throw new Error(`Актор завершився зі статусом: ${status}`);
+
+      // 3. Отримати результати
+      const itemsRes = await fetch(`${BASE}/datasets/${datasetId}/items?token=${apiKey}&limit=200`);
+      const items = await itemsRes.json();
+
+      // 4. Фільтр по місяцю
+      const monthVideos = (Array.isArray(items) ? items : []).filter((item) => {
         const created = item.createTime || item.createTimeISO || "";
         try {
-          let dt;
-          if (typeof created === "number") {
-            dt = new Date(created * 1000);
-          } else {
-            dt = new Date(created);
-          }
+          const dt = typeof created === "number" ? new Date(created * 1000) : new Date(created);
           return dt.getFullYear() === Number(year) && dt.getMonth() + 1 === Number(month);
-        } catch {
-          return false;
-        }
+        } catch { return false; }
       });
 
-      const totalViews = monthVideos.reduce((sum, v) => {
-        return sum + (v.playCount || v.stats?.playCount || 0);
-      }, 0);
-
+      const totalViews = monthVideos.reduce((sum, v) => sum + (v.playCount || v.stats?.playCount || 0), 0);
       const topVideo = monthVideos.length
         ? monthVideos.reduce((best, v) => {
             const views = v.playCount || v.stats?.playCount || 0;
@@ -82,14 +83,11 @@ exports.handler = async (event) => {
         month: `${year}-${String(month).padStart(2, "0")}`,
         videoCount: monthVideos.length,
         totalViews,
-        topVideoUrl: topVideo
-          ? topVideo.webVideoUrl || topVideo.url || `https://www.tiktok.com/@${username}`
-          : null,
-        topVideoViews: topVideo
-          ? topVideo.playCount || topVideo.stats?.playCount || 0
-          : 0,
+        topVideoUrl: topVideo ? (topVideo.webVideoUrl || topVideo.url || `https://www.tiktok.com/@${username}`) : null,
+        topVideoViews: topVideo ? (topVideo.playCount || topVideo.stats?.playCount || 0) : 0,
         topVideoDesc: topVideo?.text || topVideo?.desc || "",
       });
+
     } catch (err) {
       results.push({ username, error: err.message || "Помилка парсингу" });
     }
