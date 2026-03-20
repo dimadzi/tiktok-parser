@@ -489,14 +489,11 @@ function setProgress(pct, msg) {
   document.getElementById('progressLog').textContent = msg;
 }
 
-let lastResults = [];
-let pollInterval = null;
+// Зберігаємо всі результати тут — ключ: username
+let allResults = {};
 
-function stopPolling() {
-  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-}
-
-function renderResults(results, done) {
+function renderResults(resultsMap) {
+  const results = Object.values(resultsMap);
   lastResults = results.filter(r => r.status === 'done' || r.error);
   const body = document.getElementById('resultsBody');
   body.innerHTML = '';
@@ -546,6 +543,8 @@ function renderResults(results, done) {
   document.getElementById('results').style.display = 'block';
 }
 
+let lastResults = [];
+
 function downloadCSV() {
   if (!lastResults.length) return;
   const header = ['username','month','video_count','total_views','avg_views','top_video_views','top_video_url','error'];
@@ -562,94 +561,81 @@ function downloadCSV() {
   a.click();
 }
 
+// Поллінг одного акаунту поки не SUCCEEDED або FAILED
+async function waitForResult(apiKey, runInfo, year, month) {
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 8000));
+    try {
+      const pollRes = await fetch('/.netlify/functions/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, runs: [runInfo], year, month }),
+      });
+      const pollData = await pollRes.json();
+      const result = pollData.results?.[0];
+      if (result && (result.status === 'done' || result.error)) return result;
+    } catch (e) { console.error('Poll error:', e); }
+  }
+  return { username: runInfo.username, error: 'Таймаут очікування' };
+}
+
 async function runParser() {
   const apiKey   = document.getElementById('apiKey').value.trim();
   const raw      = document.getElementById('accounts').value;
-  const month    = document.getElementById('month').value;
-  const year     = document.getElementById('year').value;
+  const month    = Number(document.getElementById('month').value);
+  const year     = Number(document.getElementById('year').value);
   const accounts = parseAccounts(raw);
 
   if (!apiKey)          return alert('Вкажи Apify API ключ');
   if (!accounts.length) return alert('Додай хоча б один акаунт');
 
-  stopPolling();
-
+  allResults = {};
   const btn = document.getElementById('runBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ ЗАПУСК...';
   document.getElementById('progress').style.display = 'block';
   document.getElementById('results').style.display = 'none';
-  setProgress(10, 'Запускаємо задачі на Apify...');
 
-  try {
-    // Крок 1 — запускаємо всі задачі
-    const res = await fetch('/.netlify/functions/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey, accounts, year: Number(year), month: Number(month) }),
-    });
+  // Обробляємо акаунти ПОСЛІДОВНО — один за одним
+  for (let i = 0; i < accounts.length; i++) {
+    const username = accounts[i];
+    setProgress(
+      Math.round((i / accounts.length) * 90),
+      `Акаунт ${i + 1} з ${accounts.length}: @${username}...`
+    );
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    // Показуємо pending для поточного
+    allResults[username] = { username, status: 'pending' };
+    renderResults(allResults);
 
-    setProgress(25, `Задачі запущено (${data.runs.length}). Чекаємо результатів...`);
-    btn.textContent = '⏳ ОБРОБКА...';
+    // Крок 1 — запускаємо актор для цього акаунту
+    let runInfo;
+    try {
+      const res = await fetch('/.netlify/functions/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, username, year, month }),
+      });
+      runInfo = await res.json();
+      if (runInfo.error) throw new Error(runInfo.error);
+    } catch (err) {
+      allResults[username] = { username, error: err.message };
+      renderResults(allResults);
+      continue;
+    }
 
-    // Показуємо pending картки одразу
-    renderResults(data.runs.map(r => ({ ...r, status: r.error ? undefined : 'pending' })));
-
-    let currentRuns = data.runs;
-    let pollCount = 0;
-
-    // Крок 2 — поллінг кожні 8 секунд
-    pollInterval = setInterval(async () => {
-      pollCount++;
-      const elapsed = pollCount * 8;
-      setProgress(Math.min(25 + pollCount * 5, 90), `Перевіряємо статус... (${elapsed}с)`);
-
-      try {
-        const pollRes = await fetch('/.netlify/functions/poll', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey, runs: currentRuns, year: Number(year), month: Number(month) }),
-        });
-
-        const pollData = await pollRes.json();
-        renderResults(pollData.results, pollData.allDone);
-
-        // Оновлюємо лише pending runs для наступного поллу
-        currentRuns = currentRuns.map(run => {
-          const found = pollData.results.find(r => r.username === run.username);
-          if (found?.status === 'done' || found?.error) return { ...run, _done: true };
-          return run;
-        }).filter(r => !r._done);
-
-        if (pollData.allDone || currentRuns.length === 0) {
-          stopPolling();
-          setProgress(100, '✅ Готово!');
-          btn.disabled = false;
-          btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
-        }
-
-        // Таймаут 10 хвилин
-        if (pollCount > 75) {
-          stopPolling();
-          setProgress(100, '⚠️ Таймаут — деякі акаунти не відповіли');
-          btn.disabled = false;
-          btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
-        }
-      } catch (e) {
-        console.error('Poll error:', e);
-      }
-    }, 8000);
-
-  } catch (err) {
-    stopPolling();
-    setProgress(0, '');
-    btn.disabled = false;
-    btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
-    alert('Помилка: ' + err.message);
+    // Крок 2 — чекаємо результат цього акаунту
+    setProgress(
+      Math.round((i / accounts.length) * 90) + 5,
+      `Чекаємо Apify для @${username}...`
+    );
+    const result = await waitForResult(apiKey, runInfo, year, month);
+    allResults[username] = result;
+    renderResults(allResults);
   }
+
+  setProgress(100, `✅ Готово! Оброблено: ${accounts.length}`);
+  btn.disabled = false;
+  btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
 }
 </script>
 </body>
