@@ -1,8 +1,0 @@
-{
-  "name": "tiktok-parser",
-  "version": "1.0.0",
-  "description": "TikTok profile parser via Apify",
-  "dependencies": {
-    "apify-client": "^2.9.3"
-  }
-}
