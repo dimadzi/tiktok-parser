@@ -17,7 +17,6 @@
     --accent2: #25f4ee;
     --text: #f0f0f0;
     --muted: #666;
-    --success: #1db954;
     --mono: 'Space Mono', monospace;
     --sans: 'DM Sans', sans-serif;
   }
@@ -32,7 +31,6 @@
     font-size: 15px;
   }
 
-  /* ── NOISE TEXTURE ── */
   body::before {
     content: '';
     position: fixed;
@@ -50,10 +48,7 @@
     padding: 60px 24px 80px;
   }
 
-  /* ── HEADER ── */
-  header {
-    margin-bottom: 52px;
-  }
+  header { margin-bottom: 52px; }
 
   .logo-row {
     display: flex;
@@ -79,7 +74,6 @@
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.5px;
-    color: var(--text);
   }
 
   .subtitle {
@@ -89,7 +83,6 @@
     margin-left: 52px;
   }
 
-  /* ── CARD ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -107,7 +100,6 @@
     margin-bottom: 16px;
   }
 
-  /* ── FORM ELEMENTS ── */
   label {
     display: block;
     font-size: 13px;
@@ -130,9 +122,7 @@
     resize: vertical;
   }
 
-  input:focus, textarea:focus, select:focus {
-    border-color: var(--accent2);
-  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent2); }
 
   input[type="password"] {
     font-family: var(--mono);
@@ -155,14 +145,8 @@
   .field { margin-bottom: 20px; }
   .field:last-child { margin-bottom: 0; }
 
-  /* ── API KEY ROW ── */
-  .api-row {
-    position: relative;
-  }
-
-  .api-row input {
-    padding-right: 44px;
-  }
+  .api-row { position: relative; }
+  .api-row input { padding-right: 44px; }
 
   .toggle-vis {
     position: absolute;
@@ -177,10 +161,8 @@
     padding: 4px;
     line-height: 1;
   }
-
   .toggle-vis:hover { color: var(--text); }
 
-  /* ── MONTH SELECT ── */
   select {
     cursor: pointer;
     appearance: none;
@@ -189,10 +171,8 @@
     background-position: right 14px center;
     padding-right: 36px;
   }
-
   select option { background: #1a1a1a; }
 
-  /* ── BUTTON ── */
   .btn-run {
     width: 100%;
     padding: 16px;
@@ -207,19 +187,12 @@
     cursor: pointer;
     transition: opacity 0.2s, transform 0.1s;
     margin-top: 8px;
-    position: relative;
-    overflow: hidden;
   }
-
   .btn-run:hover:not(:disabled) { opacity: 0.88; }
   .btn-run:active:not(:disabled) { transform: scale(0.99); }
   .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* ── PROGRESS ── */
-  #progress {
-    display: none;
-    margin-top: 20px;
-  }
+  #progress { display: none; margin-top: 20px; }
 
   .progress-bar-wrap {
     background: var(--surface2);
@@ -243,7 +216,6 @@
     color: var(--accent2);
   }
 
-  /* ── RESULTS ── */
   #results { display: none; margin-top: 28px; }
 
   .results-header {
@@ -273,13 +245,8 @@
     cursor: pointer;
     transition: all 0.2s;
   }
+  .btn-csv:hover { border-color: var(--accent2); color: var(--accent2); }
 
-  .btn-csv:hover {
-    border-color: var(--accent2);
-    color: var(--accent2);
-  }
-
-  /* ── RESULT CARD ── */
   .result-item {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -304,20 +271,16 @@
     background: linear-gradient(180deg, var(--accent), var(--accent2));
     border-radius: 3px 0 0 3px;
   }
-
   .result-item.error::before { background: #ff4444; }
+  .result-item.pending::before { background: var(--muted); }
 
   .result-username {
     font-family: var(--mono);
     font-size: 15px;
     font-weight: 700;
-    color: var(--text);
     margin-bottom: 14px;
   }
-
-  .result-username span {
-    color: var(--accent);
-  }
+  .result-username span { color: var(--accent); }
 
   .stats-row {
     display: grid;
@@ -345,9 +308,7 @@
     font-family: var(--mono);
     font-size: 20px;
     font-weight: 700;
-    color: var(--text);
   }
-
   .stat-value.accent { color: var(--accent2); }
 
   .top-video {
@@ -371,10 +332,7 @@
     letter-spacing: 0.5px;
   }
 
-  .top-video-info {
-    flex: 1;
-    min-width: 0;
-  }
+  .top-video-info { flex: 1; min-width: 0; }
 
   .top-video-views {
     font-family: var(--mono);
@@ -394,16 +352,11 @@
     margin-top: 2px;
     transition: color 0.2s;
   }
-
   .top-video-link:hover { color: var(--accent2); }
 
-  .result-error {
-    color: #ff6b6b;
-    font-size: 13px;
-    font-family: var(--mono);
-  }
+  .result-error { color: #ff6b6b; font-size: 13px; font-family: var(--mono); }
+  .result-pending { color: var(--muted); font-size: 13px; font-family: var(--mono); }
 
-  /* ── FOOTER ── */
   footer {
     text-align: center;
     margin-top: 52px;
@@ -430,7 +383,6 @@
     <p class="subtitle">Аналіз акаунтів через Apify API · дані за вибраний місяць</p>
   </header>
 
-  <!-- API KEY -->
   <div class="card">
     <div class="card-label">Налаштування</div>
     <div class="field">
@@ -443,7 +395,6 @@
     </div>
   </div>
 
-  <!-- INPUT -->
   <div class="card">
     <div class="card-label">Параметри запиту</div>
 
@@ -475,7 +426,6 @@
     </div>
   </div>
 
-  <!-- RESULTS -->
   <div id="results">
     <div class="results-header">
       <div class="results-title">Результати</div>
@@ -488,7 +438,6 @@
 </div>
 
 <script>
-// ── INIT SELECTS ──
 const MONTHS = ['Січень','Лютий','Березень','Квітень','Травень','Червень',
                 'Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 
@@ -496,7 +445,6 @@ const MONTHS = ['Січень','Лютий','Березень','Квітень',
   const now = new Date();
   const mSel = document.getElementById('month');
   const ySel = document.getElementById('year');
-
   MONTHS.forEach((m, i) => {
     const opt = document.createElement('option');
     opt.value = i + 1;
@@ -504,7 +452,6 @@ const MONTHS = ['Січень','Лютий','Березень','Квітень',
     if (i + 1 === now.getMonth() + 1) opt.selected = true;
     mSel.appendChild(opt);
   });
-
   for (let y = now.getFullYear(); y >= 2020; y--) {
     const opt = document.createElement('option');
     opt.value = y;
@@ -514,13 +461,11 @@ const MONTHS = ['Січень','Лютий','Березень','Квітень',
   }
 })();
 
-// ── TOGGLE KEY VIS ──
 function toggleKeyVis() {
   const inp = document.getElementById('apiKey');
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-// ── PARSE ACCOUNTS ──
 function parseAccounts(raw) {
   return raw.split('\n')
     .map(l => l.trim().replace(/,$/, ''))
@@ -533,36 +478,42 @@ function parseAccounts(raw) {
     .filter(Boolean);
 }
 
-// ── FORMAT NUMBERS ──
 function fmt(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
   return String(n);
 }
 
-// ── PROGRESS ──
 function setProgress(pct, msg) {
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressLog').textContent = msg;
 }
 
-// ── RENDER RESULTS ──
 let lastResults = [];
+let pollInterval = null;
 
-function renderResults(results) {
-  lastResults = results;
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+function renderResults(results, done) {
+  lastResults = results.filter(r => r.status === 'done' || r.error);
   const body = document.getElementById('resultsBody');
   body.innerHTML = '';
 
   results.forEach((r, idx) => {
     const div = document.createElement('div');
-    div.className = 'result-item' + (r.error ? ' error' : '');
+    div.className = 'result-item' + (r.error ? ' error' : r.status === 'pending' ? ' pending' : '');
     div.style.animationDelay = (idx * 0.08) + 's';
 
     if (r.error) {
       div.innerHTML = `
         <div class="result-username">@<span>${r.username}</span></div>
         <div class="result-error">❌ ${r.error}</div>`;
+    } else if (r.status === 'pending') {
+      div.innerHTML = `
+        <div class="result-username">@<span>${r.username}</span></div>
+        <div class="result-pending">⏳ Збираємо дані...</div>`;
     } else {
       div.innerHTML = `
         <div class="result-username">@<span>${r.username}</span> · ${r.month}</div>
@@ -589,14 +540,12 @@ function renderResults(results) {
           </div>
         </div>` : '<div style="color:var(--muted);font-size:13px">Відео за цей місяць не знайдено</div>'}`;
     }
-
     body.appendChild(div);
   });
 
   document.getElementById('results').style.display = 'block';
 }
 
-// ── CSV DOWNLOAD ──
 function downloadCSV() {
   if (!lastResults.length) return;
   const header = ['username','month','video_count','total_views','avg_views','top_video_views','top_video_url','error'];
@@ -613,7 +562,6 @@ function downloadCSV() {
   a.click();
 }
 
-// ── MAIN RUN ──
 async function runParser() {
   const apiKey   = document.getElementById('apiKey').value.trim();
   const raw      = document.getElementById('accounts').value;
@@ -621,41 +569,86 @@ async function runParser() {
   const year     = document.getElementById('year').value;
   const accounts = parseAccounts(raw);
 
-  if (!apiKey)        return alert('Вкажи Apify API ключ');
+  if (!apiKey)          return alert('Вкажи Apify API ключ');
   if (!accounts.length) return alert('Додай хоча б один акаунт');
+
+  stopPolling();
 
   const btn = document.getElementById('runBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ ОБРОБКА...';
+  btn.textContent = '⏳ ЗАПУСК...';
   document.getElementById('progress').style.display = 'block';
   document.getElementById('results').style.display = 'none';
-
-  setProgress(10, `Запит для ${accounts.length} акаунт(ів)...`);
+  setProgress(10, 'Запускаємо задачі на Apify...');
 
   try {
+    // Крок 1 — запускаємо всі задачі
     const res = await fetch('/.netlify/functions/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey, accounts, year: Number(year), month: Number(month) }),
     });
 
-    setProgress(90, 'Обробка відповіді...');
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    setProgress(100, `Готово! Оброблено акаунтів: ${data.results.length}`);
-    renderResults(data.results);
+
+    setProgress(25, `Задачі запущено (${data.runs.length}). Чекаємо результатів...`);
+    btn.textContent = '⏳ ОБРОБКА...';
+
+    // Показуємо pending картки одразу
+    renderResults(data.runs.map(r => ({ ...r, status: r.error ? undefined : 'pending' })));
+
+    let currentRuns = data.runs;
+    let pollCount = 0;
+
+    // Крок 2 — поллінг кожні 8 секунд
+    pollInterval = setInterval(async () => {
+      pollCount++;
+      const elapsed = pollCount * 8;
+      setProgress(Math.min(25 + pollCount * 5, 90), `Перевіряємо статус... (${elapsed}с)`);
+
+      try {
+        const pollRes = await fetch('/.netlify/functions/poll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey, runs: currentRuns, year: Number(year), month: Number(month) }),
+        });
+
+        const pollData = await pollRes.json();
+        renderResults(pollData.results, pollData.allDone);
+
+        // Оновлюємо лише pending runs для наступного поллу
+        currentRuns = currentRuns.map(run => {
+          const found = pollData.results.find(r => r.username === run.username);
+          if (found?.status === 'done' || found?.error) return { ...run, _done: true };
+          return run;
+        }).filter(r => !r._done);
+
+        if (pollData.allDone || currentRuns.length === 0) {
+          stopPolling();
+          setProgress(100, '✅ Готово!');
+          btn.disabled = false;
+          btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
+        }
+
+        // Таймаут 10 хвилин
+        if (pollCount > 75) {
+          stopPolling();
+          setProgress(100, '⚠️ Таймаут — деякі акаунти не відповіли');
+          btn.disabled = false;
+          btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
+        }
+      } catch (e) {
+        console.error('Poll error:', e);
+      }
+    }, 8000);
 
   } catch (err) {
+    stopPolling();
     setProgress(0, '');
-    alert('Помилка: ' + err.message);
-  } finally {
     btn.disabled = false;
     btn.textContent = '▶ ЗАПУСТИТИ ПАРСЕР';
+    alert('Помилка: ' + err.message);
   }
 }
 </script>
